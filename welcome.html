@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识宇宙</title>
+<style>
+/* ── RESET ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 100%; height: 100%;
+  background: #080810;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  color: #fff;
+}
+
+/* ── STARS CANVAS ───────────────────────────────────────────────────────────── */
+#starsCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: transform 0.2s ease;
+}
+
+/* ── PAGE WRAPPER ───────────────────────────────────────────────────────────── */
+#page {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+#page.exit {
+  animation: pageExit 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes pageExit {
+  from { opacity: 1; transform: translateY(0);     }
+  to   { opacity: 0; transform: translateY(-40px); }
+}
+
+/* ── BACKGROUND HALOS ───────────────────────────────────────────────────────── */
+.halo {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.15;
+}
+@keyframes haloBreath {
+  from { transform: scale(1);    }
+  to   { transform: scale(1.08); }
+}
+.h1 { width:520px; height:520px; background:radial-gradient(circle,#1a1a4a 0%,transparent 70%); filter:blur(88px);  top:4%;    left:4%;   animation:haloBreath  9s ease-in-out infinite alternate; }
+.h2 { width:620px; height:620px; background:radial-gradient(circle,#2a1a4a 0%,transparent 70%); filter:blur(110px); top:25%;   right:3%;  animation:haloBreath 12s ease-in-out infinite alternate; animation-delay:-4s;   }
+.h3 { width:480px; height:480px; background:radial-gradient(circle,#1a1a4a 0%,transparent 70%); filter:blur(96px);  bottom:8%; left:12%;  animation:haloBreath 14s ease-in-out infinite alternate; animation-delay:-8s;   }
+.h4 { width:560px; height:560px; background:radial-gradient(circle,#2a1a4a 0%,transparent 70%); filter:blur(100px); top:10%;   left:38%;  animation:haloBreath  8s ease-in-out infinite alternate; animation-delay:-2s;   }
+.h5 { width:420px; height:420px; background:radial-gradient(circle,#1a1a4a 0%,transparent 70%); filter:blur(120px); bottom:18%; right:18%; animation:haloBreath 11s ease-in-out infinite alternate; animation-delay:-5.5s; }
+
+/* ── CONTAINER: 三分线 Grid 布局 ─────────────────────────────────────────────
+   三行等高，整体占满视口高度；视差倾斜 transform 作用于此层
+────────────────────────────────────────────────────────────────────────────── */
+#container {
+  position: relative;
+  z-index: 2;
+  width: 600px;
+  height: 100vh;
+  text-align: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+
+/* 每个区域内部 flex 居中 */
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── ENTRY ANIMATION KEYFRAMES ──────────────────────────────────────────────── */
+@keyframes fadeUp20 {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+@keyframes fadeUp30 {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+@keyframes fadeUp15 {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+@keyframes fadeOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── 1. 顶部小标签 ──────────────────────────────────────────────────────────── */
+.label {
+  font-size: 11px;
+  letter-spacing: 5px;
+  color: #444;
+  font-weight: 400;
+  margin-bottom: 18px;
+  animation: fadeUp20 0.8s 0.1s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── 2. 标题包裹层（含星系背景）───────────────────────────────────────────────
+   position: relative 使 galaxy-bg 的 absolute 定位以此为基准
+────────────────────────────────────────────────────────────────────────────── */
+.title-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 3. 星系背景容器（绝对定位在标题正后方）───────────────────────────────────
+   400×400px，pointer-events:none 不干扰任何点击
+────────────────────────────────────────────────────────────────────────────── */
+.galaxy-bg {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 中心光晕：200px 径向渐变 + 呼吸缩放 */
+.galaxy-halo {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(200, 210, 255, 0.03) 40%,
+    transparent 70%);
+  animation: galaxyHaloPulse 4s ease-in-out infinite alternate;
+}
+@keyframes galaxyHaloPulse {
+  from { transform: translate(-50%, -50%) scale(1);    }
+  to   { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* 轨道圆环：绝对定位，居中，CSS rotation 驱动光点绕行 */
+.orbit {
+  position: absolute;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+}
+.or1 {
+  width: 160px; height: 160px;
+  margin: -80px  0 0 -80px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  animation: orbitRing 12s linear infinite;
+}
+.or2 {
+  width: 260px; height: 260px;
+  margin: -130px 0 0 -130px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  animation: orbitRing 20s linear infinite reverse;
+}
+.or3 {
+  width: 380px; height: 380px;
+  margin: -190px 0 0 -190px;
+  border: 1px solid rgba(255, 255, 255, 0.025);
+  animation: orbitRing 32s linear infinite;
+}
+@keyframes orbitRing {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+/* 轨道光点：固定在轨道顶部，随轨道旋转绕行；纯白色系 */
+.dot {
+  position: absolute;
+  top: -1.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+}
+.d1 {
+  width: 3px; height: 3px;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9),
+              0 0 12px rgba(255, 255, 255, 0.4);
+}
+.d2 {
+  width: 2px; height: 2px;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.8),
+              0 0 10px rgba(255, 255, 255, 0.3);
+}
+.d3 {
+  width: 2px; height: 2px;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7),
+              0 0  8px rgba(255, 255, 255, 0.25);
+}
+
+/* ── 4. 主标题 ──────────────────────────────────────────────────────────────
+   position: relative; z-index: 1 — 浮在星系光晕之上
+   呼吸光效 1.2s 后启动，避免与入场 transform 冲突
+────────────────────────────────────────────────────────────────────────────── */
+@keyframes titleBreath {
+  0%, 100% {
+    text-shadow:
+      0 0 120px rgba(100, 120, 255, 0.15),
+      0 0  40px rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    text-shadow:
+      0 0 160px rgba(100, 120, 255, 0.25),
+      0 0  60px rgba(255, 255, 255, 0.08);
+  }
+}
+.title {
+  position: relative;
+  z-index: 1;
+  font-size: 88px;
+  font-weight: 200;
+  color: #ffffff;
+  letter-spacing: 4px;
+  text-shadow:
+    0 0 120px rgba(100, 120, 255, 0.15),
+    0 0  40px rgba(255, 255, 255, 0.05);
+  animation:
+    fadeUp30    0.9s  0.2s cubic-bezier(0.4, 0, 0.2, 1) both,
+    titleBreath 4s    1.2s ease-in-out infinite;
+}
+
+/* ── 5. 副标题（Follow Curiosity）──────────────────────────────────────────── */
+.subtitle {
+  font-size: 18px;
+  color: #666;
+  font-weight: 300;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  animation: fadeUp20 0.8s 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── 6. 细分隔线 ─────────────────────────────────────────────────────────────── */
+.divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #333, transparent);
+  margin: 0 auto 24px;
+  animation: fadeOnly 0.6s 0.52s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── 7. 搜索框 ──────────────────────────────────────────────────────────────── */
+.search-wrap {
+  position: relative;
+  width: 540px;
+  margin: 0 auto;
+  animation: fadeUp15 0.8s 0.62s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.search-icon {
+  position: absolute;
+  left: 19px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 0 24px 0 52px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 80px rgba(100, 120, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-size: 15px;
+  color: #ccc;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.3s ease;
+}
+.search-input::placeholder { color: #333; }
+.search-input:focus {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(100, 120, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ── 8. Pills 展开容器（默认隐藏，搜索聚焦时滑入）──────────────────────────────
+   max-height 0→200px + opacity 0→1 + translateY 8px→0
+   mousedown on pill 阻止 blur，确保点击 pill 不会先收起
+────────────────────────────────────────────────────────────────────────────── */
+.pills-expand {
+  width: 540px;
+  margin: 0 auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity    0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform  0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pills-expand.open {
+  max-height: 220px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pills-hint {
+  font-size: 12px;
+  color: #444;
+  text-align: center;
+  margin: 14px 0 10px;
+}
+
+/* Pills 容器（有机弹性排列） */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 100px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #555;
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #999;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 学科彩点 */
+.pdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.p-soc .pdot { background: #4A90D9; box-shadow: 0 0 5px rgba(74,  144, 217, 0.7); }
+.p-com .pdot { background: #E8844A; box-shadow: 0 0 5px rgba(232, 132, 74,  0.7); }
+.p-phi .pdot { background: #9B6FD4; box-shadow: 0 0 5px rgba(155, 111, 212, 0.7); }
+.p-eco .pdot { background: #52C49A; box-shadow: 0 0 5px rgba(82,  196, 154, 0.7); }
+
+/* ── 9. 跳过入口（单行，下三分之一居中）────────────────────────────────────── */
+.skip {
+  font-size: 15px;
+  color: #555;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease, letter-spacing 0.3s ease;
+  animation: fadeOnly 0.6s 0.88s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.skip:hover {
+  color: #888;
+  letter-spacing: 0.6px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Stars canvas：z-index 0，铺满全屏 ── -->
+<canvas id="starsCanvas"></canvas>
+
+<!-- ── Page wrapper：负责整体居中和离场动画 ── -->
+<div id="page">
+
+  <!-- 背景光晕（5个，深蓝/深紫交替） -->
+  <div class="halo h1"></div>
+  <div class="halo h2"></div>
+  <div class="halo h3"></div>
+  <div class="halo h4"></div>
+  <div class="halo h5"></div>
+
+  <!-- 主容器：三分线 Grid，视差倾斜目标 -->
+  <div id="container">
+
+    <!-- ▌上三分之一：标题区 ── -->
+    <div class="section section-top">
+
+      <!-- KNOWLEDGE UNIVERSE 小标签 -->
+      <div class="label">KNOWLEDGE UNIVERSE</div>
+
+      <!-- 标题包裹层：星系背景绝对定位在此，标题浮于其上 -->
+      <div class="title-wrap">
+
+        <!-- 星系背景层（position:absolute，pointer-events:none） -->
+        <div class="galaxy-bg">
+          <!-- 中心光晕（径向渐变 + 呼吸动画） -->
+          <div class="galaxy-halo"></div>
+          <!-- 轨道1：160px，12s 顺转，3px 白点 -->
+          <div class="orbit or1"><div class="dot d1"></div></div>
+          <!-- 轨道2：260px，20s 逆转，2px 白点 -->
+          <div class="orbit or2"><div class="dot d2"></div></div>
+          <!-- 轨道3：380px，32s 顺转，2px 白点 -->
+          <div class="orbit or3"><div class="dot d3"></div></div>
+        </div>
+
+        <!-- 「知识宇宙」主标题（relative z-index:1，浮于星系上方） -->
+        <h1 class="title">知识宇宙</h1>
+
+      </div>
+    </div><!-- /.section-top -->
+
+    <!-- ▌中三分之一：交互区 ── -->
+    <div class="section section-mid">
+
+      <!-- Follow Curiosity 副标题 -->
+      <p class="subtitle">Follow Curiosity</p>
+
+      <!-- 细分隔线 -->
+      <div class="divider"></div>
+
+      <!-- 搜索框 -->
+      <div class="search-wrap">
+        <svg class="search-icon" width="17" height="17" viewBox="0 0 17 17" fill="none">
+          <circle cx="7" cy="7" r="5.2" stroke="#444" stroke-width="1.35"/>
+          <path d="M11 11L15.5 15.5" stroke="#444" stroke-width="1.35" stroke-linecap="round"/>
+        </svg>
+        <input
+          class="search-input"
+          id="searchInput"
+          type="text"
+          placeholder="一个问题，开启一段思想之旅…"
+          autocomplete="off"
+        >
+      </div>
+
+      <!-- Pills：默认折叠，搜索聚焦时展开 -->
+      <div class="pills-expand" id="pillsExpand">
+        <p class="pills-hint">或者试试这些问题：</p>
+        <div class="pills" id="pillsWrap">
+          <!-- 社会学 · 蓝 -->
+          <button class="pill p-soc" data-q="孤独">
+            <span class="pdot"></span>为什么现代人越来越孤独？
+          </button>
+          <button class="pill p-soc" data-q="权力">
+            <span class="pdot"></span>权力是如何在社会中运作的？
+          </button>
+          <!-- 传播学 · 橙 -->
+          <button class="pill p-com" data-q="媒体">
+            <span class="pdot"></span>媒体真的能操控人的想法吗？
+          </button>
+          <button class="pill p-com" data-q="茧房">
+            <span class="pdot"></span>为什么会有信息茧房？
+          </button>
+          <!-- 哲学 · 紫 -->
+          <button class="pill p-phi" data-q="自由意志">
+            <span class="pdot"></span>自由意志真的存在吗？
+          </button>
+          <button class="pill p-phi" data-q="认识论">
+            <span class="pdot"></span>我们能认识真实的世界吗？
+          </button>
+          <!-- 经济学 · 绿 -->
+          <button class="pill p-eco" data-q="贫富差距">
+            <span class="pdot"></span>贫富差距为什么越来越大？
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /.section-mid -->
+
+    <!-- ▌下三分之一：次要入口 ── -->
+    <div class="section section-bot">
+      <div class="skip" id="skipBtn">
+        已经知道想探索的领域？直接进入 →
+      </div>
+    </div>
+
+  </div><!-- /#container -->
+</div><!-- /#page -->
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// 1. STARS — Canvas 星点，极缓慢漂移，碰边反向
+// ════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('starsCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const stars = Array.from({ length: 200 }, () => ({
+  x  : Math.random() * window.innerWidth,
+  y  : Math.random() * window.innerHeight,
+  r  : Math.random() * 0.5 + 0.5,
+  a  : Math.random() * 0.17 + 0.08,
+  vx : (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.1 + 0.05),
+  vy : (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 0.1 + 0.05),
+}));
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.x += s.vx;
+    s.y += s.vy;
+    if (s.x <= 0 || s.x >= canvas.width)  s.vx *= -1;
+    if (s.y <= 0 || s.y >= canvas.height) s.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ════════════════════════════════════════════════════════════════════════════
+// 2. MOUSE PARALLAX — tvOS 同款视差倾斜（最大 6°）
+// ════════════════════════════════════════════════════════════════════════════
+const container = document.getElementById('container');
+
+document.addEventListener('mousemove', (e) => {
+  const rect    = container.getBoundingClientRect();
+  const centerX = rect.left + rect.width  / 2;
+  const centerY = rect.top  + rect.height / 2;
+  const mouseX  = e.clientX - centerX;
+  const mouseY  = e.clientY - centerY;
+
+  const maxTilt = 6;
+  const tiltX   =  (mouseY / (window.innerHeight / 2)) * maxTilt;
+  const tiltY   = -(mouseX / (window.innerWidth  / 2)) * maxTilt;
+
+  container.style.transform  = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+  container.style.transition = 'transform 0.1s ease';
+
+  canvas.style.transform  = `translate(${-mouseX * 0.02}px, ${-mouseY * 0.02}px)`;
+  canvas.style.transition = 'transform 0.15s ease';
+});
+
+document.addEventListener('mouseleave', () => {
+  container.style.transform  = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+  container.style.transition = 'transform 0.6s ease';
+  canvas.style.transform     = 'translate(0px, 0px)';
+  canvas.style.transition    = 'transform 0.6s ease';
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// 3. PILLS 展开 / 收起 — 搜索框 focus / blur 驱动
+// ════════════════════════════════════════════════════════════════════════════
+const searchInput = document.getElementById('searchInput');
+const pillsExpand = document.getElementById('pillsExpand');
+
+searchInput.addEventListener('focus', () => {
+  pillsExpand.classList.add('open');
+});
+
+searchInput.addEventListener('blur', () => {
+  // 延迟 150ms，给 pill 的 mousedown→click 时间先触发
+  setTimeout(() => {
+    if (document.activeElement !== searchInput) {
+      pillsExpand.classList.remove('open');
+    }
+  }, 150);
+});
+
+// mousedown preventDefault：阻止 pill 点击时搜索框失去焦点
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('mousedown', (e) => e.preventDefault());
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// 4. EXIT ANIMATION — 离场并跳转到 map.html
+// ════════════════════════════════════════════════════════════════════════════
+
+// 问题关键词 → map.html?question= 参数映射
+const questionKeyMap = {
+  '孤独':   'loneliness',
+  '媒体':   'media',
+  '权力':   'power',
+  '茧房':   'echoChamber',
+  '为什么现代人越来越孤独？': 'loneliness',
+  '媒体真的能操控人的想法吗？': 'media',
+  '权力是如何在社会中运作的？': 'power',
+  '为什么会有信息茧房？': 'echoChamber',
+};
+
+function exitPage(query) {
+  const page = document.getElementById('page');
+  page.classList.add('exit');
+  setTimeout(() => {
+    const key = query ? questionKeyMap[query] : null;
+    if (key) {
+      window.location.href = `map.html?question=${key}`;
+    } else {
+      window.location.href = 'map.html';
+    }
+  }, 700);
+}
+
+// Pill 点击
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => exitPage(pill.dataset.q || pill.textContent.trim()));
+});
+
+// 搜索框 Enter 键
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') exitPage(e.target.value.trim());
+});
+
+// 跳过按钮
+document.getElementById('skipBtn').addEventListener('click', () => exitPage());
+</script>
+</body>
+</html>
