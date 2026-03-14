@@ -81,6 +81,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
+  transform: translateZ(1px);
 }
 
 /* ── ENTRY ANIMATION KEYFRAMES ──────────────────────────────────────────────── */
@@ -631,6 +634,8 @@ function exitPage(query) {
     const key = query ? questionKeyMap[query] : null;
     if (key) {
       window.location.href = `map.html?question=${key}`;
+    } else if (query) {
+      window.location.href = `map.html?search=${encodeURIComponent(query)}`;
     } else {
       window.location.href = 'map.html';
     }
