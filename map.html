@@ -2365,6 +2365,11 @@ function handleUrlParams() {
   if (initialQuestion && questionMap[initialQuestion]) {
     setTimeout(() => triggerQuestion(initialQuestion), 700);
   }
+
+  const searchQuery = params.get('search');
+  if (searchQuery) {
+    setTimeout(() => handleCustomQuestion(searchQuery), 700);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
