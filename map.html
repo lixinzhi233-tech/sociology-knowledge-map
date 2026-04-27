@@ -2684,31 +2684,32 @@ async function openSummary() {
 }
 
 // Close button fix
-$('summaryCloseBtn').addEventListener('click', () => {
-  $('summaryModal').classList.remove('open');
-});
-$('summaryModal').addEventListener('click', e => {
-  if (e.target === $('summaryModal')) $('summaryModal').classList.remove('open');
-});
-
-// Share button
-$('shareBtn')?.addEventListener('click', () => {
-  const scholarIds = exploredScholars.join(',');
-  const shareUrl = `${window.location.origin}${window.location.pathname.replace('map.html','welcome.html')}?path=${encodeURIComponent(scholarIds)}`;
-  navigator.clipboard.writeText(shareUrl).then(() => {
-    const toast = $('shareToast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
-  }).catch(() => {
-    prompt('复制这个链接分享给同学：', shareUrl);
+document.addEventListener('DOMContentLoaded', () => {
+  $('summaryCloseBtn')?.addEventListener('click', () => {
+    $('summaryModal')?.classList.remove('open');
   });
-});
+  $('summaryModal')?.addEventListener('click', e => {
+    if (e.target === $('summaryModal')) $('summaryModal')?.classList.remove('open');
+  });
 
-// Export button
-$('exportBtn')?.addEventListener('click', () => {
-  const body = $('summaryBody');
-  if (!body || !body.innerHTML) return;
-  const html = `<html><head><meta charset="utf-8"><title>知识宇宙 · 探索报告</title>
+  // Share button
+  $('shareBtn')?.addEventListener('click', () => {
+    const scholarIds = exploredScholars.join(',');
+    const shareUrl = `${window.location.origin}${window.location.pathname.replace('map.html','welcome.html')}?path=${encodeURIComponent(scholarIds)}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      const toast = $('shareToast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }).catch(() => {
+      prompt('复制这个链接分享给同学：', shareUrl);
+    });
+  });
+
+  // Export button
+  $('exportBtn')?.addEventListener('click', () => {
+    const body = $('summaryBody');
+    if (!body || !body.innerHTML) return;
+    const html = `<html><head><meta charset="utf-8"><title>知识宇宙 · 探索报告</title>
 <style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:40px auto;padding:0 20px;color:#333;line-height:1.8}
 h1{font-size:20px;text-align:center;margin-bottom:24px}h2{font-size:14px;color:#4A90D9;text-transform:uppercase;letter-spacing:1px;margin:20px 0 8px}
 p{font-size:14px;margin:6px 0}.topic{background:#f5f7fa;padding:10px 14px;border-radius:8px;margin:6px 0}
@@ -2716,12 +2717,13 @@ p{font-size:14px;margin:6px 0}.topic{background:#f5f7fa;padding:10px 14px;border
 .step{padding:4px 0;padding-left:16px;position:relative}.step::before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:#4A90D9}
 hr{border:none;border-top:1px solid #eee;margin:16px 0}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:30px}</style></head><body>
 <h1>知识宇宙 · 探索报告</h1>${body.innerHTML.replace(/class="report-section-label"/g,'').replace(/report-section-label/g,'').replace(/<div class="report-section">/g,'<div>').replace(/<div class="report-sep"><\/div>/g,'<hr>').replace(/color:[^;"]+;?/g,'')}<div class="footer">由「知识宇宙」AI 生成</div></body></html>`;
-  const blob = new Blob([html], { type: 'application/msword' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '知识宇宙_探索报告.doc';
-  a.click();
-  URL.revokeObjectURL(a.href);
+    const blob = new Blob([html], { type: 'application/msword' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '知识宇宙_探索报告.doc';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
 });
 
 window.addEventListener('DOMContentLoaded', init);
