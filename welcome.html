@@ -12,7 +12,7 @@ body {
   width: 100%; height: 100%;
   background: #080810;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-  overflow: hidden;
+  overflow-y: auto;
   -webkit-font-smoothing: antialiased;
   color: #fff;
 }
@@ -27,13 +27,12 @@ body {
 
 /* ── PAGE WRAPPER ───────────────────────────────────────────────────────────── */
 #page {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  min-height: 100vh;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;
 }
 #page.exit {
   animation: pageExit 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -45,7 +44,7 @@ body {
 
 /* ── BACKGROUND HALOS ───────────────────────────────────────────────────────── */
 .halo {
-  position: absolute;
+  position: fixed;
   border-radius: 50%;
   pointer-events: none;
   opacity: 0.15;
@@ -60,19 +59,19 @@ body {
 .h4 { width:560px; height:560px; background:radial-gradient(circle,#2a1a4a 0%,transparent 70%); filter:blur(100px); top:10%;   left:38%;  animation:haloBreath  8s ease-in-out infinite alternate; animation-delay:-2s;   }
 .h5 { width:420px; height:420px; background:radial-gradient(circle,#1a1a4a 0%,transparent 70%); filter:blur(120px); bottom:18%; right:18%; animation:haloBreath 11s ease-in-out infinite alternate; animation-delay:-5.5s; }
 
-/* ── CONTAINER: 三分线 Grid 布局 ─────────────────────────────────────────────
-   三行等高，整体占满视口高度；视差倾斜 transform 作用于此层
-────────────────────────────────────────────────────────────────────────────── */
+/* ── CONTAINER ─────────────────────────────────────────────── */
 #container {
   position: relative;
   z-index: 2;
   width: 600px;
-  height: 100vh;
+  min-height: 100vh;
   text-align: center;
   transform-style: preserve-3d;
   will-change: transform;
-  display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 60px;
 }
 
 /* 每个区域内部 flex 居中 */
@@ -84,6 +83,16 @@ body {
   position: relative;
   z-index: 1;
   transform: translateZ(1px);
+  width: 100%;
+}
+
+.section-top {
+  padding-top: 18vh;
+  padding-bottom: 20px;
+}
+
+.section-mid {
+  padding-bottom: 20px;
 }
 
 /* ── ENTRY ANIMATION KEYFRAMES ──────────────────────────────────────────────── */
@@ -114,9 +123,7 @@ body {
   animation: fadeUp20 0.8s 0.1s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* ── 2. 标题包裹层（含星系背景）───────────────────────────────────────────────
-   position: relative 使 galaxy-bg 的 absolute 定位以此为基准
-────────────────────────────────────────────────────────────────────────────── */
+/* ── 2. 标题包裹层（含星系背景）─────────────────────────────────────────────── */
 .title-wrap {
   position: relative;
   display: flex;
@@ -124,9 +131,7 @@ body {
   justify-content: center;
 }
 
-/* ── 3. 星系背景容器（绝对定位在标题正后方）───────────────────────────────────
-   400×400px，pointer-events:none 不干扰任何点击
-────────────────────────────────────────────────────────────────────────────── */
+/* ── 3. 星系背景容器 ────────────────────────────────────────────────────────── */
 .galaxy-bg {
   position: absolute;
   width: 400px;
@@ -138,7 +143,7 @@ body {
   pointer-events: none;
 }
 
-/* 中心光晕：200px 径向渐变 + 呼吸缩放 */
+/* 中心光晕 */
 .galaxy-halo {
   position: absolute;
   width: 200px;
@@ -157,7 +162,7 @@ body {
   to   { transform: translate(-50%, -50%) scale(1.15); }
 }
 
-/* 轨道圆环：绝对定位，居中，CSS rotation 驱动光点绕行 */
+/* 轨道圆环 */
 .orbit {
   position: absolute;
   border-radius: 50%;
@@ -187,7 +192,7 @@ body {
   to   { transform: rotate(360deg); }
 }
 
-/* 轨道光点：固定在轨道顶部，随轨道旋转绕行；纯白色系 */
+/* 轨道光点 */
 .dot {
   position: absolute;
   top: -1.5px;
@@ -214,10 +219,7 @@ body {
               0 0  8px rgba(255, 255, 255, 0.25);
 }
 
-/* ── 4. 主标题 ──────────────────────────────────────────────────────────────
-   position: relative; z-index: 1 — 浮在星系光晕之上
-   呼吸光效 1.2s 后启动，避免与入场 transform 冲突
-────────────────────────────────────────────────────────────────────────────── */
+/* ── 4. 主标题 ────────────────────────────────────────────────────────────── */
 @keyframes titleBreath {
   0%, 100% {
     text-shadow:
@@ -245,7 +247,7 @@ body {
     titleBreath 4s    1.2s ease-in-out infinite;
 }
 
-/* ── 5. 副标题（Follow Curiosity）──────────────────────────────────────────── */
+/* ── 5. 副标题 ──────────────────────────────────────────────────────────────── */
 .subtitle {
   font-size: 18px;
   color: #666;
@@ -310,10 +312,7 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* ── 8. Pills 展开容器（默认隐藏，搜索聚焦时滑入）──────────────────────────────
-   max-height 0→200px + opacity 0→1 + translateY 8px→0
-   mousedown on pill 阻止 blur，确保点击 pill 不会先收起
-────────────────────────────────────────────────────────────────────────────── */
+/* ── 8. Pills 展开容器 ──────────────────────────────────────────────────────── */
 .pills-expand {
   width: 540px;
   margin: 0 auto;
@@ -339,7 +338,7 @@ body {
   margin: 14px 0 10px;
 }
 
-/* Pills 容器（有机弹性排列） */
+/* Pills 容器 */
 .pills {
   display: flex;
   flex-wrap: wrap;
@@ -388,8 +387,9 @@ body {
 .p-com .pdot { background: #E8844A; box-shadow: 0 0 5px rgba(232, 132, 74,  0.7); }
 .p-phi .pdot { background: #9B6FD4; box-shadow: 0 0 5px rgba(155, 111, 212, 0.7); }
 .p-eco .pdot { background: #52C49A; box-shadow: 0 0 5px rgba(82,  196, 154, 0.7); }
+.p-new .pdot { background: #C49A52; box-shadow: 0 0 5px rgba(196, 154, 82,  0.7); }
 
-/* ── 9. 跳过入口（单行，下三分之一居中）────────────────────────────────────── */
+/* ── 9. 跳过入口 ────────────────────────────────────────────────────────────── */
 .skip {
   font-size: 15px;
   color: #555;
@@ -403,60 +403,227 @@ body {
   color: #888;
   letter-spacing: 0.6px;
 }
+
+/* ── 10. AI 探索结果区域 ─────────────────────────────────────────────────────── */
+#exploreResults {
+  width: 540px;
+  margin: 0 auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity    0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform  0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#exploreResults.open {
+  max-height: 2000px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 加载状态 */
+.explore-loading {
+  text-align: center;
+  padding: 24px 0;
+  font-size: 14px;
+  color: #555;
+}
+.explore-loading .dots::after {
+  content: '';
+  animation: loadDots 1.5s ease-in-out infinite;
+}
+@keyframes loadDots {
+  0%        { content: ''; }
+  25%       { content: '.'; }
+  50%       { content: '..'; }
+  75%       { content: '...'; }
+  100%      { content: ''; }
+}
+
+/* 结果摘要 */
+.explore-summary {
+  font-size: 13px;
+  color: #777;
+  text-align: center;
+  margin: 16px 0 20px;
+  line-height: 1.6;
+}
+
+/* 方向卡片 */
+.direction-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.direction-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #ccc;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.direction-title::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4A90D9;
+  box-shadow: 0 0 8px rgba(74, 144, 217, 0.6);
+  flex-shrink: 0;
+}
+.direction-desc {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* 学者卡片 */
+.scholar-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.scholar-card:hover {
+  background: rgba(74, 144, 217, 0.08);
+  border-color: rgba(74, 144, 217, 0.25);
+  transform: translateX(4px);
+}
+.scholar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #141426;
+  border: 1.5px solid rgba(74, 144, 217, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(74, 144, 217, 0.2);
+}
+.scholar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scholar-info {
+  flex: 1;
+  min-width: 0;
+}
+.scholar-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #bbb;
+  margin-bottom: 2px;
+}
+.scholar-reason {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.5;
+}
+.scholar-arrow {
+  color: #4A90D9;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.scholar-card:hover .scholar-arrow {
+  opacity: 1;
+}
+
+/* 底部分隔 */
+.explore-divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #333, transparent);
+  margin: 20px auto 14px;
+}
+.explore-also {
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding-bottom: 8px;
+}
+.explore-also:hover {
+  color: #888;
+}
+
+/* 错误状态 */
+.explore-error {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 13px;
+  color: #E85555;
+}
+
+.section-bot {
+  padding: 30px 0 40px;
+}
 </style>
 </head>
 <body>
 
-<!-- ── Stars canvas：z-index 0，铺满全屏 ── -->
+<!-- ── Stars canvas ── -->
 <canvas id="starsCanvas"></canvas>
 
-<!-- ── Page wrapper：负责整体居中和离场动画 ── -->
+<!-- ── Page wrapper ── -->
 <div id="page">
 
-  <!-- 背景光晕（5个，深蓝/深紫交替） -->
+  <!-- 背景光晕 -->
   <div class="halo h1"></div>
   <div class="halo h2"></div>
   <div class="halo h3"></div>
   <div class="halo h4"></div>
   <div class="halo h5"></div>
 
-  <!-- 主容器：三分线 Grid，视差倾斜目标 -->
+  <!-- 主容器 -->
   <div id="container">
 
-    <!-- ▌上三分之一：标题区 ── -->
+    <!-- ▌上：标题区 ── -->
     <div class="section section-top">
 
-      <!-- KNOWLEDGE UNIVERSE 小标签 -->
       <div class="label">KNOWLEDGE UNIVERSE</div>
 
-      <!-- 标题包裹层：星系背景绝对定位在此，标题浮于其上 -->
       <div class="title-wrap">
-
-        <!-- 星系背景层（position:absolute，pointer-events:none） -->
         <div class="galaxy-bg">
-          <!-- 中心光晕（径向渐变 + 呼吸动画） -->
           <div class="galaxy-halo"></div>
-          <!-- 轨道1：160px，12s 顺转，3px 白点 -->
           <div class="orbit or1"><div class="dot d1"></div></div>
-          <!-- 轨道2：260px，20s 逆转，2px 白点 -->
           <div class="orbit or2"><div class="dot d2"></div></div>
-          <!-- 轨道3：380px，32s 顺转，2px 白点 -->
           <div class="orbit or3"><div class="dot d3"></div></div>
         </div>
-
-        <!-- 「知识宇宙」主标题（relative z-index:1，浮于星系上方） -->
         <h1 class="title">知识宇宙</h1>
-
       </div>
-    </div><!-- /.section-top -->
+    </div>
 
-    <!-- ▌中三分之一：交互区 ── -->
+    <!-- ▌中：交互区 ── -->
     <div class="section section-mid">
 
-      <!-- Follow Curiosity 副标题 -->
       <p class="subtitle">Follow Curiosity</p>
-
-      <!-- 细分隔线 -->
       <div class="divider"></div>
 
       <!-- 搜索框 -->
@@ -474,53 +641,74 @@ body {
         >
       </div>
 
-      <!-- Pills：默认折叠，搜索聚焦时展开 -->
+      <!-- Pills -->
       <div class="pills-expand" id="pillsExpand">
         <p class="pills-hint">或者试试这些问题：</p>
         <div class="pills" id="pillsWrap">
+          <!-- 场景引导 · 金 -->
+          <button class="pill p-new" data-q="我刚进社会学专业，想了解这个学科在研究什么">
+            <span class="pdot"></span>我刚进社会学，想了解这个学科
+          </button>
+          <button class="pill p-new" data-q="我想写一篇关于社交媒体社会影响的论文">
+            <span class="pdot"></span>想写社交媒体影响的论文
+          </button>
           <!-- 社会学 · 蓝 -->
-          <button class="pill p-soc" data-q="孤独">
+          <button class="pill p-soc" data-q="为什么现代人越来越孤独？">
             <span class="pdot"></span>为什么现代人越来越孤独？
           </button>
-          <button class="pill p-soc" data-q="权力">
+          <button class="pill p-soc" data-q="权力是如何在社会中运作的？">
             <span class="pdot"></span>权力是如何在社会中运作的？
           </button>
           <!-- 传播学 · 橙 -->
-          <button class="pill p-com" data-q="媒体">
+          <button class="pill p-com" data-q="媒体真的能操控人的想法吗？">
             <span class="pdot"></span>媒体真的能操控人的想法吗？
           </button>
-          <button class="pill p-com" data-q="茧房">
+          <button class="pill p-com" data-q="为什么会有信息茧房？">
             <span class="pdot"></span>为什么会有信息茧房？
           </button>
-          <!-- 哲学 · 紫 -->
-          <button class="pill p-phi" data-q="自由意志">
-            <span class="pdot"></span>自由意志真的存在吗？
-          </button>
-          <button class="pill p-phi" data-q="认识论">
-            <span class="pdot"></span>我们能认识真实的世界吗？
-          </button>
           <!-- 经济学 · 绿 -->
-          <button class="pill p-eco" data-q="贫富差距">
+          <button class="pill p-eco" data-q="贫富差距为什么越来越大？">
             <span class="pdot"></span>贫富差距为什么越来越大？
           </button>
         </div>
       </div>
 
-    </div><!-- /.section-mid -->
+      <!-- AI 探索结果区域 -->
+      <div id="exploreResults"></div>
 
-    <!-- ▌下三分之一：次要入口 ── -->
+    </div>
+
+    <!-- ▌下：次要入口 ── -->
     <div class="section section-bot">
       <div class="skip" id="skipBtn">
         已经知道想探索的领域？直接进入 →
       </div>
     </div>
 
-  </div><!-- /#container -->
-</div><!-- /#page -->
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════════════════════════════════════
-// 1. STARS — Canvas 星点，极缓慢漂移，碰边反向
+// CONFIG
+// ════════════════════════════════════════════════════════════════════════════
+const API_BASE = 'https://knowledge-universe-api.lixinzhi233.workers.dev';
+
+// Wikipedia avatar 快查表（和 map.html 里学者数据一致）
+const scholarWiki = {
+  weber:"Max_Weber", durkheim:"Émile_Durkheim", simmel:"Georg_Simmel",
+  parsons:"Talcott_Parsons", merton:"Robert_K._Merton", mills:"C._Wright_Mills",
+  bourdieu:"Pierre_Bourdieu", goffman:"Erving_Goffman", habermas:"Jürgen_Habermas",
+  foucault:"Michel_Foucault", gramsci:"Antonio_Gramsci", lasswell:"Harold_Lasswell",
+  lazarsfeld:"Paul_Lazarsfeld", mcluhan:"Marshall_McLuhan", hall:"Stuart_Hall_(cultural_theorist)",
+  lippmann:"Walter_Lippmann", postman:"Neil_Postman", noelle_neumann:"Elisabeth_Noelle-Neumann",
+  mccomb:"Maxwell_McCombs", giddens:"Anthony_Giddens", marx:"Karl_Marx",
+  butler:"Judith_Butler", hooks:"Bell_hooks", collins:"Patricia_Hill_Collins",
+  beauvoir:"Simone_de_Beauvoir", dubois:"W._E._B._Du_Bois"
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// 1. STARS
 // ════════════════════════════════════════════════════════════════════════════
 const canvas = document.getElementById('starsCanvas');
 const ctx    = canvas.getContext('2d');
@@ -558,7 +746,7 @@ function drawStars() {
 drawStars();
 
 // ════════════════════════════════════════════════════════════════════════════
-// 2. MOUSE PARALLAX — tvOS 同款视差倾斜（最大 6°）
+// 2. MOUSE PARALLAX
 // ════════════════════════════════════════════════════════════════════════════
 const container = document.getElementById('container');
 
@@ -588,7 +776,7 @@ document.addEventListener('mouseleave', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// 3. PILLS 展开 / 收起 — 搜索框 focus / blur 驱动
+// 3. PILLS 展开 / 收起
 // ════════════════════════════════════════════════════════════════════════════
 const searchInput = document.getElementById('searchInput');
 const pillsExpand = document.getElementById('pillsExpand');
@@ -598,7 +786,6 @@ searchInput.addEventListener('focus', () => {
 });
 
 searchInput.addEventListener('blur', () => {
-  // 延迟 150ms，给 pill 的 mousedown→click 时间先触发
   setTimeout(() => {
     if (document.activeElement !== searchInput) {
       pillsExpand.classList.remove('open');
@@ -612,47 +799,163 @@ document.querySelectorAll('.pill').forEach(pill => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// 4. EXIT ANIMATION — 离场并跳转到 map.html
+// 4. AI EXPLORE — 调用 /api/explore 并渲染结果
 // ════════════════════════════════════════════════════════════════════════════
+let isExploring = false;
 
-// 问题关键词 → map.html?question= 参数映射
-const questionKeyMap = {
-  '孤独':   'loneliness',
-  '媒体':   'media',
-  '权力':   'power',
-  '茧房':   'echoChamber',
-  '为什么现代人越来越孤独？': 'loneliness',
-  '媒体真的能操控人的想法吗？': 'media',
-  '权力是如何在社会中运作的？': 'power',
-  '为什么会有信息茧房？': 'echoChamber',
-};
+async function callExplore(query) {
+  if (!query || isExploring) return;
+  isExploring = true;
 
-function exitPage(query) {
+  const resultsEl = document.getElementById('exploreResults');
+
+  // 收起 pills
+  pillsExpand.classList.remove('open');
+
+  // 显示加载
+  resultsEl.innerHTML = `
+    <div class="explore-loading">
+      正在为你分析探索方向<span class="dots"></span>
+    </div>`;
+  resultsEl.classList.add('open');
+
+  // 滚动到结果区域
+  setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/explore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    const data = await resp.json();
+
+    // 解析 AI 返回
+    const raw = data.content?.[0]?.text || '';
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { parsed = null; }
+
+    if (!parsed?.directions?.length) {
+      resultsEl.innerHTML = `<div class="explore-error">暂时无法分析，请换一种方式描述你的兴趣</div>`;
+      isExploring = false;
+      return;
+    }
+
+    // 渲染结果
+    let html = '';
+
+    if (parsed.summary) {
+      html += `<div class="explore-summary">${parsed.summary}</div>`;
+    }
+
+    parsed.directions.forEach(dir => {
+      html += `<div class="direction-card">`;
+      html += `<div class="direction-title">${dir.title}</div>`;
+      html += `<div class="direction-desc">${dir.description}</div>`;
+
+      (dir.scholars || []).forEach(sch => {
+        const wikiId = scholarWiki[sch.id] || '';
+        html += `
+          <div class="scholar-card" data-scholar-id="${sch.id}">
+            <div class="scholar-avatar" data-wiki="${wikiId}">${(sch.nameZh || sch.id).charAt(0)}</div>
+            <div class="scholar-info">
+              <div class="scholar-name">${sch.nameZh || sch.id}</div>
+              <div class="scholar-reason">${sch.reason || ''}</div>
+            </div>
+            <div class="scholar-arrow">→</div>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+    // 底部"直接查看全部学者"入口
+    html += `<div class="explore-divider"></div>`;
+    html += `<div class="explore-also" id="exploreViewAll">或者直接浏览全部学者地图 →</div>`;
+
+    resultsEl.innerHTML = html;
+
+    // 绑定学者卡片点击 → 跳转 map.html?scholar=xxx
+    resultsEl.querySelectorAll('.scholar-card').forEach(card => {
+      card.addEventListener('click', () => {
+        exitPage('scholar', card.dataset.scholarId);
+      });
+    });
+
+    // 绑定"查看全部"→ 跳转 map.html?search=xxx
+    document.getElementById('exploreViewAll')?.addEventListener('click', () => {
+      exitPage('search', query);
+    });
+
+    // 加载学者头像
+    resultsEl.querySelectorAll('.scholar-avatar[data-wiki]').forEach(avatarEl => {
+      const wikiId = avatarEl.dataset.wiki;
+      if (!wikiId) return;
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiId)}`)
+        .then(r => r.json())
+        .then(d => {
+          const url = d.thumbnail?.source;
+          if (url) avatarEl.innerHTML = `<img src="${url}" alt="">`;
+        }).catch(() => {});
+    });
+
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="explore-error">网络连接失败，请稍后重试</div>`;
+  }
+
+  isExploring = false;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5. EXIT ANIMATION — 离场并跳转
+// ════════════════════════════════════════════════════════════════════════════
+function exitPage(mode, param) {
   const page = document.getElementById('page');
   page.classList.add('exit');
   setTimeout(() => {
-    const key = query ? questionKeyMap[query] : null;
-    if (key) {
-      window.location.href = `map.html?question=${key}`;
-    } else if (query) {
-      window.location.href = `map.html?search=${encodeURIComponent(query)}`;
+    if (mode === 'scholar' && param) {
+      window.location.href = `map.html?scholar=${encodeURIComponent(param)}`;
+    } else if (mode === 'search' && param) {
+      window.location.href = `map.html?search=${encodeURIComponent(param)}`;
+    } else if (mode === 'question' && param) {
+      window.location.href = `map.html?question=${param}`;
     } else {
       window.location.href = 'map.html';
     }
   }, 700);
 }
 
-// Pill 点击
+// 旧问题关键词映射（保留兼容，用于预设问题的直接跳转）
+const questionKeyMap = {
+  '为什么现代人越来越孤独？': 'loneliness',
+  '权力是如何在社会中运作的？': 'power',
+  '媒体真的能操控人的想法吗？': 'media',
+  '为什么会有信息茧房？': 'echoChamber',
+  '贫富差距为什么越来越大？': 'inequality',
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// 6. EVENT BINDINGS
+// ════════════════════════════════════════════════════════════════════════════
+
+// Pill 点击 → 调用 AI 探索
 document.querySelectorAll('.pill').forEach(pill => {
-  pill.addEventListener('click', () => exitPage(pill.dataset.q || pill.textContent.trim()));
+  pill.addEventListener('click', () => {
+    const query = pill.dataset.q || pill.textContent.trim();
+    searchInput.value = query;
+    callExplore(query);
+  });
 });
 
-// 搜索框 Enter 键
+// 搜索框 Enter → 调用 AI 探索
 searchInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') exitPage(e.target.value.trim());
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim();
+    if (query) callExplore(query);
+  }
 });
 
-// 跳过按钮
+// 跳过按钮 → 直接进地图
 document.getElementById('skipBtn').addEventListener('click', () => exitPage());
 </script>
 </body>
