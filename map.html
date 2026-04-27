@@ -724,6 +724,72 @@ html, body {
 .summary-scholar-name { font-size: 13px; color: #ccc; font-weight: 500; margin-bottom: 4px; }
 .summary-scholar-relevance { font-size: 12px; color: #666; line-height: 1.5; }
 .summary-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+/* Report sections */
+.report-section { margin-bottom: 20px; }
+.report-section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #4A90D9; margin-bottom: 8px;
+}
+.report-text { font-size: 13px; color: #999; line-height: 1.7; }
+.report-topic {
+  padding: 10px 14px; margin: 6px 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.report-topic-name { font-size: 13px; color: #ccc; font-weight: 500; margin-bottom: 3px; }
+.report-topic-reason { font-size: 11px; color: #666; line-height: 1.5; }
+.report-reading {
+  padding: 8px 12px; margin: 5px 0;
+  border-left: 2px solid rgba(74,144,217,0.3);
+}
+.report-reading-title { font-size: 13px; color: #bbb; font-weight: 500; }
+.report-reading-author { font-size: 11px; color: #555; }
+.report-reading-reason { font-size: 11px; color: #666; line-height: 1.5; margin-top: 2px; }
+.report-step {
+  font-size: 12px; color: #888; line-height: 1.6;
+  padding: 4px 0; padding-left: 14px; position: relative;
+}
+.report-step::before {
+  content: ''; position: absolute; left: 0; top: 11px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #4A90D9; box-shadow: 0 0 6px rgba(74,144,217,0.4);
+}
+.report-sep {
+  height: 1px; margin: 16px 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+}
+#summaryFooter {
+  padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex; gap: 8px; flex-shrink: 0;
+}
+.summary-footer-btn {
+  flex: 1; padding: 10px;
+  border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #888; font-size: 12px; font-family: inherit;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.summary-footer-btn:hover {
+  background: rgba(255,255,255,0.08); color: #ccc;
+}
+.summary-footer-btn.primary {
+  background: rgba(74,144,217,0.15); border-color: rgba(74,144,217,0.3); color: #4A90D9;
+}
+.summary-footer-btn.primary:hover {
+  background: rgba(74,144,217,0.25); color: #7bb8f0;
+}
+/* Share toast */
+#shareToast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  background: rgba(74,144,217,0.9); color: #fff;
+  padding: 10px 24px; border-radius: 100px;
+  font-size: 13px; z-index: 300;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+#shareToast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -767,7 +833,7 @@ html, body {
       <div class="ld-sub-label">随手记</div>
       <textarea id="globalNotes" class="global-notes-input" placeholder="记录你的想法、困惑、或发现的联系…"></textarea>
       <div class="summary-wrap">
-        <button id="summaryBtn" class="summary-btn">生成本次探索总结</button>
+        <button id="summaryBtn" class="summary-btn">生成探索报告</button>
       </div>
     </div>
   </div>
@@ -1227,6 +1293,7 @@ let activeQuestionKey = null;
 let activeFilter      = "all";
 let expandedConcept   = null;
 const conceptCache    = {};
+let initialQuery      = null;
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS
@@ -2368,6 +2435,7 @@ function handleUrlParams() {
 
   const searchQuery = params.get('search');
   if (searchQuery) {
+    initialQuery = searchQuery;
     setTimeout(() => handleCustomQuestion(searchQuery), 700);
   }
 
@@ -2508,55 +2576,153 @@ $('chatInput').addEventListener('keydown', e => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// 21. SUMMARY MODAL (语义搜索 → 探索关联)
+// 21. EXPLORE REPORT + SHARE
 // ═══════════════════════════════════════════════════════════════════
 async function openSummary() {
   if (exploredScholars.length === 0) {
-    alert('请先点击几位学者进行探索，再生成总结。');
+    alert('请先点击几位学者进行探索，再生成报告。');
     return;
   }
 
   $('summaryModal').classList.add('open');
-  $('summaryBody').innerHTML = '<div style="padding:20px;color:#555;font-size:13px">正在分析你的探索轨迹…</div>';
+  $('summaryBody').innerHTML = '<div style="padding:40px 20px;color:#555;font-size:13px;text-align:center">正在生成你的探索报告…</div>';
 
   const explored = exploredScholars.map(id => scholarById(id)).filter(Boolean);
-  const names = explored.map(s => s.nameZh).join('、');
-  const query = `我探索了这些学者：${names}。请找出他们之间最核心的思想关联，以及这次探索揭示了哪些学术脉络。`;
+  const names = explored.map(s => s.nameZh);
+  const notes = $('globalNotes')?.value || '';
 
   try {
-    const resp = await fetch(`${API_BASE}/api/search`, {
+    const resp = await fetch(`${API_BASE}/api/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, scholars })
+      body: JSON.stringify({
+        exploredScholars: names,
+        notes: notes,
+        initialQuery: initialQuery
+      })
     });
     const data = await resp.json();
     const raw = data.content?.[0]?.text || '';
     let parsed;
     try { parsed = JSON.parse(raw); } catch { parsed = null; }
 
-    if (parsed?.results?.length) {
-      const rows = parsed.results.map(r => {
-        const s = scholarById(r.id);
-        const color = s ? discColor(s) : '#666';
-        return `<div class="summary-scholar-row">
-          <div class="summary-dot" style="background:${color}"></div>
-          <div>
-            <div class="summary-scholar-name">${s?.nameZh || r.id}</div>
-            <div class="summary-scholar-relevance">${r.relevance}</div>
-          </div>
-        </div>`;
-      }).join('');
-      $('summaryBody').innerHTML = rows;
+    if (parsed) {
+      let html = '';
+
+      // Title
+      if (parsed.title) {
+        html += `<div style="font-size:16px;color:#ccc;font-weight:500;margin-bottom:16px;text-align:center">${parsed.title}</div>`;
+      }
+
+      // Interest profile
+      if (parsed.interestProfile) {
+        html += `<div class="report-section">
+          <div class="report-section-label">兴趣画像</div>
+          <div class="report-text">${parsed.interestProfile}</div>
+        </div><div class="report-sep"></div>`;
+      }
+
+      // Knowledge map
+      if (parsed.knowledgeMap) {
+        html += `<div class="report-section">
+          <div class="report-section-label">知识脉络</div>
+          <div class="report-text">${parsed.knowledgeMap}</div>
+        </div><div class="report-sep"></div>`;
+      }
+
+      // Suggested topics
+      if (parsed.suggestedTopics?.length) {
+        html += `<div class="report-section">
+          <div class="report-section-label">推荐选题</div>`;
+        parsed.suggestedTopics.forEach(t => {
+          const topic = typeof t === 'string' ? t : t.topic;
+          const reason = typeof t === 'string' ? '' : (t.reason || '');
+          html += `<div class="report-topic">
+            <div class="report-topic-name">${topic}</div>
+            ${reason ? `<div class="report-topic-reason">${reason}</div>` : ''}
+          </div>`;
+        });
+        html += `</div><div class="report-sep"></div>`;
+      }
+
+      // Further reading
+      if (parsed.furtherReading?.length) {
+        html += `<div class="report-section">
+          <div class="report-section-label">延伸阅读</div>`;
+        parsed.furtherReading.forEach(r => {
+          if (typeof r === 'string') {
+            html += `<div class="report-reading"><div class="report-reading-title">${r}</div></div>`;
+          } else {
+            html += `<div class="report-reading">
+              <div class="report-reading-title">${r.title || ''}</div>
+              ${r.author ? `<div class="report-reading-author">${r.author}</div>` : ''}
+              ${r.reason ? `<div class="report-reading-reason">${r.reason}</div>` : ''}
+            </div>`;
+          }
+        });
+        html += `</div><div class="report-sep"></div>`;
+      }
+
+      // Next steps
+      if (parsed.nextSteps?.length) {
+        html += `<div class="report-section">
+          <div class="report-section-label">下一步建议</div>`;
+        parsed.nextSteps.forEach(s => {
+          html += `<div class="report-step">${s}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      $('summaryBody').innerHTML = html;
     } else {
-      $('summaryBody').innerHTML = `<div style="padding:20px;color:#666;font-size:13px">${raw || '暂无结果。'}</div>`;
+      // Fallback: show raw text
+      $('summaryBody').innerHTML = `<div style="padding:20px;color:#888;font-size:13px;line-height:1.7">${raw || '生成失败，请重试。'}</div>`;
     }
   } catch {
-    $('summaryBody').innerHTML = '<div style="padding:20px;color:#555;font-size:13px">连接失败，请确认 server.js 已启动。</div>';
+    $('summaryBody').innerHTML = '<div style="padding:20px;color:#E85555;font-size:13px">网络连接失败，请稍后重试。</div>';
   }
 }
 
-$('summaryCloseBtn')?.addEventListener('click', () => $('summaryModal')?.classList.remove('open'));
-$('summaryModal')?.addEventListener('click', e => { if (e.target === $('summaryModal')) $('summaryModal')?.classList.remove('open'); });
+// Close button fix
+$('summaryCloseBtn').addEventListener('click', () => {
+  $('summaryModal').classList.remove('open');
+});
+$('summaryModal').addEventListener('click', e => {
+  if (e.target === $('summaryModal')) $('summaryModal').classList.remove('open');
+});
+
+// Share button
+$('shareBtn')?.addEventListener('click', () => {
+  const scholarIds = exploredScholars.join(',');
+  const shareUrl = `${window.location.origin}${window.location.pathname.replace('map.html','welcome.html')}?path=${encodeURIComponent(scholarIds)}`;
+  navigator.clipboard.writeText(shareUrl).then(() => {
+    const toast = $('shareToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }).catch(() => {
+    prompt('复制这个链接分享给同学：', shareUrl);
+  });
+});
+
+// Export button
+$('exportBtn')?.addEventListener('click', () => {
+  const body = $('summaryBody');
+  if (!body || !body.innerHTML) return;
+  const html = `<html><head><meta charset="utf-8"><title>知识宇宙 · 探索报告</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:40px auto;padding:0 20px;color:#333;line-height:1.8}
+h1{font-size:20px;text-align:center;margin-bottom:24px}h2{font-size:14px;color:#4A90D9;text-transform:uppercase;letter-spacing:1px;margin:20px 0 8px}
+p{font-size:14px;margin:6px 0}.topic{background:#f5f7fa;padding:10px 14px;border-radius:8px;margin:6px 0}
+.topic-name{font-weight:600}.topic-reason{font-size:13px;color:#666}.reading{border-left:3px solid #4A90D9;padding:6px 12px;margin:6px 0}
+.step{padding:4px 0;padding-left:16px;position:relative}.step::before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:#4A90D9}
+hr{border:none;border-top:1px solid #eee;margin:16px 0}.footer{text-align:center;color:#aaa;font-size:12px;margin-top:30px}</style></head><body>
+<h1>知识宇宙 · 探索报告</h1>${body.innerHTML.replace(/class="report-section-label"/g,'').replace(/report-section-label/g,'').replace(/<div class="report-section">/g,'<div>').replace(/<div class="report-sep"><\/div>/g,'<hr>').replace(/color:[^;"]+;?/g,'')}<div class="footer">由「知识宇宙」AI 生成</div></body></html>`;
+  const blob = new Blob([html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '知识宇宙_探索报告.doc';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
 window.addEventListener('DOMContentLoaded', init);
 </script>
@@ -2565,11 +2731,16 @@ window.addEventListener('DOMContentLoaded', init);
 <div id="summaryModal">
   <div id="summaryPanel">
     <div id="summaryPanelHeader">
-      <span id="summaryPanelTitle">本次探索总结</span>
+      <span id="summaryPanelTitle">探索报告</span>
       <button id="summaryCloseBtn">×</button>
     </div>
     <div id="summaryBody"></div>
+    <div id="summaryFooter">
+      <button class="summary-footer-btn" id="shareBtn">分享到 QQ 群</button>
+      <button class="summary-footer-btn primary" id="exportBtn">导出文档</button>
+    </div>
   </div>
 </div>
+<div id="shareToast">已复制分享链接，去 QQ 群里分享吧</div>
 </body>
 </html>
