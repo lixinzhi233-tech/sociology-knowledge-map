@@ -2370,6 +2370,11 @@ function handleUrlParams() {
   if (searchQuery) {
     setTimeout(() => handleCustomQuestion(searchQuery), 700);
   }
+
+  const scholarParam = params.get('scholar');
+  if (scholarParam && scholarById(scholarParam)) {
+    setTimeout(() => selectScholar(scholarParam), 800);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
